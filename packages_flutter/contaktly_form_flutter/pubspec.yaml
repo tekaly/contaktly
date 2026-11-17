@@ -1,0 +1,30 @@
+name: contaktly_form_flutter
+description: >-
+  A contaktly contact form as a Flutter widget: the fields, validation, the
+  sending and the sent panel of a contaktly_form form, on the host theme;
+  a published form loaded from its forms site in one widget.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  contaktly_form:
+    git:
+      url: https://github.com/tekaly/contaktly
+      path: packages/contaktly_form
+  http: ">=1.6.0"
+  material_ui: ">=1.5.0"
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  tekartik_lints_flutter:
+    git:
+      url: https://github.com/tekartik/common_flutter.dart
+      path: packages/lints_flutter
+
+resolution: workspace

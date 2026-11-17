@@ -1,0 +1,32 @@
+name: contaktly_form_jaspr
+description: >-
+  A contaktly contact form for jaspr sites: a component loading a form
+  published on its forms site when the page renders, its island sending
+  through the contaktly backend, and the form view for an island of your
+  own (another sender).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  contaktly_form:
+    git:
+      url: https://github.com/tekaly/contaktly
+      path: packages/contaktly_form
+  # jaspr a caret (`jaspr build` refuses a constraint allowing the next
+  # minor in a site), the other packages floors.
+  jaspr: ^0.24.0-beta.0
+  universal_web: ">=1.1.0"
+  web: ">=1.1.0"
+
+dev_dependencies:
+  jaspr_test: ">=0.24.0-beta.0"
+  tekartik_lints:
+    git:
+      url: https://github.com/tekartik/common.dart
+      path: packages/lints
+  test: ">=1.31.0"
+
+resolution: workspace

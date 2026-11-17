@@ -1,0 +1,8 @@
+name: _
+publish_to: none
+environment:
+  sdk: ^3.12.0
+workspace:
+  - packages/contaktly_form
+  - packages_flutter/contaktly_form_flutter
+  - packages/contaktly_form_jaspr

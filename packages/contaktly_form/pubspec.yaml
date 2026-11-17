@@ -1,0 +1,40 @@
+name: contaktly_form
+description: >-
+  Contaktly contact forms, pure Dart: the form model, its texts in each
+  language, validation, a controller for any UI and the senders of a message
+  (the contaktly backend, a simulation, your own). No dart:io: it runs on the
+  VM, in Flutter and compiled to JavaScript.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  cv: ">=1.1.10"
+  http: ">=1.6.0"
+  meta: ">=1.16.0"
+  tekartik_app_crypto:
+    git:
+      url: https://github.com/tekartik/app_common_utils.dart
+      path: app_crypto
+    version: '>=0.2.2'
+  tekartik_mail:
+    git:
+      url: https://github.com/tekartik/mail.dart
+      path: packages/mail
+  tekartik_mail_tk:
+    git:
+      url: https://github.com/tekartik/mail.dart
+      path: packages/mail_tk
+
+dev_dependencies:
+  lints: ">=6.1.0"
+  tekartik_lints:
+    git:
+      url: https://github.com/tekartik/common.dart
+      path: packages/lints
+    version: '>=0.1.0'
+  test: ">=1.31.0"
+
+resolution: workspace

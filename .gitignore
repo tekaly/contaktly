@@ -1,0 +1,14 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Dart
+.dart_tool/
+build/
+pubspec.lock
+# Local checkouts
+pubspec_overrides.yaml
+.*
+!.gitignore
+!.github/

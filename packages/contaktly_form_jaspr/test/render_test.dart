@@ -197,6 +197,34 @@ void main() {
       document.querySelector('#cf-files-help')?.text,
       'PDF, PNG, 5 MB at most per file',
     );
+    // No line under the disabled ones by default.
+    expect(document.querySelector('#cf-files-locked'), isNull);
+    expect(inputs.first.attributes['aria-describedby'], 'cf-files-help');
+    // One given by the page.
+    tester.pumpComponent(
+      ContaktlyContactFormView(
+        form: form,
+        lang: 'en',
+        action: '/send',
+        strings: (strings) =>
+            strings.copyWith(filesLocked: 'More files with a plan'),
+      ),
+    );
+    document = (await tester.request('/')).document!;
+    expect(
+      document.querySelector('#cf-files-locked')?.text,
+      'More files with a plan',
+    );
+    expect(
+      document
+          .querySelector('input[type="file"]')
+          ?.attributes['aria-describedby'],
+      'cf-files-help cf-files-locked',
+    );
+    // Not when every field shown takes a file.
+    form.attachments.v!.shownFiles.v = 1;
+    document = (await tester.request('/')).document!;
+    expect(document.querySelector('#cf-files-locked'), isNull);
     // Without files: none, urlencoded.
     tester.pumpComponent(
       ContaktlyContactFormView(form: exampleForm(), lang: 'en', action: '/s'),

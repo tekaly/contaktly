@@ -46,6 +46,11 @@ class ContaktlyContactFormView extends StatefulComponent {
   /// default.
   final Map<String, String> hiddenFields;
 
+  /// Adapts the texts of the form (`(strings) => strings.copyWith(...)`),
+  /// all of them: the line under the file fields shown disabled
+  /// (`filesLocked`), the refusal and validation texts too.
+  final ContaktlyFormStrings Function(ContaktlyFormStrings strings)? strings;
+
   /// The form [form].
   const ContaktlyContactFormView({
     super.key,
@@ -58,6 +63,7 @@ class ContaktlyContactFormView extends StatefulComponent {
     this.spamCheck = true,
     this.values = const {},
     this.hiddenFields = const {},
+    this.strings,
   });
 
   @override
@@ -86,6 +92,7 @@ class _ContaktlyContactFormViewState extends State<ContaktlyContactFormView> {
         return sender.send(values);
       }),
       lang: component.lang,
+      strings: component.strings,
       spamCheck: component.spamCheck,
       shownAt: _pageShownAt(),
     );

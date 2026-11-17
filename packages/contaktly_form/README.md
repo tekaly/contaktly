@@ -46,3 +46,15 @@ Future<void> main() async {
 The enc password of a published form is public by construction (it is in its
 `form.json`): the backend protects the service (its sender and recipients
 fixed, its limits).
+
+## Files
+
+A form taking files has `attachments` (`CvContaktlyFormAttachments`:
+`maxFiles`, `shownFiles` (more fields shown, the ones past `maxFiles`
+disabled), `maxFileSize`, `types`), set by the contaktly backend for a form
+published there. Images, PDF, Office and OpenDocument documents, 5 MB a file
+and 10 MB in all at most. The files go in `ContaktlyFormValues.files`
+(`controller.addFile(ContaktlyFormFile(name:, bytes:))`), checked by
+`contaktlyFormValidate` (their count, size and type on their first bytes)
+and sent in the request by `ContaktlyServiceSender` (not signed: the backend
+reads their content and refuses the documents with macros).

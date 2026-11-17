@@ -3,6 +3,8 @@ import 'package:jaspr/dom.dart';
 import 'package:jaspr/jaspr.dart';
 import 'package:universal_web/web.dart' as web;
 
+import 'browser.dart';
+
 /// The name of the hidden field a person never fills (robots do).
 const contaktlyFormHoneypotName = 'website';
 
@@ -28,7 +30,8 @@ class ContaktlyContactFormView extends StatefulComponent {
   /// height).
   final void Function()? onChanged;
 
-  /// Where the form posts (`method="post"`, its fields by name) when no
+  /// Where the form posts (`method="post"`, its fields by name, as
+  /// `multipart/form-data` when it takes files: `file1`, `file2`...) when no
   /// script runs; without, its button waits for the island.
   final String? action;
 
@@ -155,12 +158,60 @@ class _ContaktlyContactFormViewState extends State<ContaktlyContactFormView> {
     _form.honeypot = valueOf(contaktlyFormHoneypotName) ?? _form.honeypot;
   }
 
+  /// Reading the files of the page before a send.
+  var _reading = false;
+
+  /// The files chosen in the page ([form]) given to the form, false when
+  /// one is too big to read.
+  Future<bool> _readPageFiles(web.EventTarget? form) async {
+    var pageFiles = contaktlyFormPageFiles(form);
+    var strings = _form.strings;
+    var maxFileSize = _form.form.maxFileSizeOrDefault;
+    var total = 0;
+    for (var file in pageFiles) {
+      total += file.size;
+      if (file.size > maxFileSize) {
+        _form.setError(
+          contaktlyFormFilesKey,
+          strings.fileTooBigErrorFor(file.name, maxFileSize),
+        );
+        return false;
+      }
+    }
+    if (total > contaktlyFormFilesMaxSize) {
+      _form.setError(
+        contaktlyFormFilesKey,
+        strings.filesTooBigErrorFor(contaktlyFormFilesMaxSize),
+      );
+      return false;
+    }
+    _form.setFiles([
+      for (var file in pageFiles)
+        ContaktlyFormFile(
+          name: file.name,
+          type: file.type,
+          bytes: await file.read(),
+        ),
+    ]);
+    return true;
+  }
+
   Future<void> _submit(web.Event event) async {
     event.preventDefault();
-    if (_form.isSending) {
+    if (_form.isSending || _reading) {
       return;
     }
     _readPageValues(event.target);
+    if (_form.form.takesFiles) {
+      _reading = true;
+      try {
+        if (!await _readPageFiles(event.target)) {
+          return;
+        }
+      } finally {
+        _reading = false;
+      }
+    }
     var result = await _form.submit();
     if (result != null) {
       component.onSent?.call(result);
@@ -175,11 +226,16 @@ class _ContaktlyContactFormViewState extends State<ContaktlyContactFormView> {
     var strings = _form.strings;
     var sending = _form.isSending;
     var action = component.action;
+    var takesFiles = _form.form.takesFiles;
     return form(
       classes: 'cf-form',
       attributes: {
         'novalidate': '',
-        if (action != null) ...{'action': action, 'method': 'post'},
+        if (action != null) ...{
+          'action': action,
+          'method': 'post',
+          if (takesFiles) 'enctype': 'multipart/form-data',
+        },
       },
       events: {'submit': (event) => _submit(event)},
       [
@@ -188,6 +244,7 @@ class _ContaktlyContactFormViewState extends State<ContaktlyContactFormView> {
         if (strings.intro.isNotEmpty)
           p(classes: 'cf-intro', [.text(strings.intro)]),
         for (var field in _form.form.shownFields) _field(field, strings),
+        if (takesFiles) _files(strings),
         for (var entry in component.hiddenFields.entries)
           input<String>(
             type: InputType.hidden,
@@ -307,6 +364,55 @@ class _ContaktlyContactFormViewState extends State<ContaktlyContactFormView> {
       if (error != null)
         p(id: '$id-error', classes: 'cf-field-error', [.text(error)]),
     ]);
+  }
+
+  /// The file inputs of a form taking files: one per file, the ones past its
+  /// max shown disabled, the types and the size under them.
+  Component _files(ContaktlyFormStrings strings) {
+    var form = _form.form;
+    var error = _form.errorOf(contaktlyFormFilesKey);
+    var maxFiles = form.maxFileCount;
+    var shown = form.shownFileCount;
+    var types = form.fileTypesOrDefault;
+    var accept = contaktlyFormFileAccept(types);
+    var locked = shown > maxFiles && strings.filesLocked.isNotEmpty;
+    var describedBy = [
+      'cf-files-help',
+      if (locked) 'cf-files-locked',
+      if (error != null) 'cf-files-error',
+    ].join(' ');
+    return div(
+      classes: error == null
+          ? 'cf-field cf-files'
+          : 'cf-field cf-files cf-invalid',
+      [
+        label(htmlFor: 'cf-file1', [.text(strings.filesLabel)]),
+        for (var i = 0; i < shown; i++)
+          input<String>(
+            id: 'cf-file${i + 1}',
+            name: 'file${i + 1}',
+            type: InputType.file,
+            classes: 'cf-file',
+            disabled: i >= maxFiles,
+            attributes: {
+              'accept': accept,
+              if (shown > 1) 'aria-label': '${strings.filesLabel} ${i + 1}',
+              'aria-describedby': describedBy,
+              if (error != null) 'aria-invalid': 'true',
+            },
+            events: {'change': (_) => _form.clearError(contaktlyFormFilesKey)},
+          ),
+        p(id: 'cf-files-help', classes: 'cf-help', [
+          .text(strings.filesHelpFor(types, form.maxFileSizeOrDefault)),
+        ]),
+        if (locked)
+          p(id: 'cf-files-locked', classes: 'cf-help', [
+            .text(strings.filesLocked),
+          ]),
+        if (error != null)
+          p(id: 'cf-files-error', classes: 'cf-field-error', [.text(error)]),
+      ],
+    );
   }
 
   Component _sentPanel() {

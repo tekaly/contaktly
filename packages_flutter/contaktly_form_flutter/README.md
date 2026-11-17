@@ -30,3 +30,38 @@ final contactForm = ContaktlyPublishedForm(
 (`ContaktlyFunctionSender` for your own backend, `ContaktlySimulatedSender`
 for tests); `ContaktlyContactForm.controller(controller)` shows a
 `ContaktlyFormController` you read or drive.
+
+## Files
+
+A form taking files shows its file field when given a `filePicker` (the
+package has no plugin: the picker of your app). With
+[`file_selector`](https://pub.dev/packages/file_selector):
+
+```dart
+import 'package:file_selector/file_selector.dart';
+
+Future<ContaktlyFormFile?> pickFile(List<String> types) async {
+  var file = await openFile(
+    acceptedTypeGroups: [
+      XTypeGroup(
+        label: 'files',
+        extensions: contaktlyFormFileExtensions(types),
+        mimeTypes: types,
+      ),
+    ],
+  );
+  if (file == null) {
+    return null;
+  }
+  return ContaktlyFormFile(
+    name: file.name,
+    type: file.mimeType ?? '',
+    bytes: await file.readAsBytes(),
+  );
+}
+
+final contactForm = ContaktlyPublishedForm(
+  url: Uri.parse('https://contact.wannahub.com/f/<formId>/form.json'),
+  filePicker: pickFile,
+);
+```

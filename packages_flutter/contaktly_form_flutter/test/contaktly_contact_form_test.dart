@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:contaktly_form/contaktly_form.dart';
 import 'package:contaktly_form_flutter/contaktly_form_flutter.dart';
@@ -299,5 +300,79 @@ void main() {
       (decoration.enabledBorder as OutlineInputBorder).borderRadius,
       BorderRadius.circular(4),
     );
+  });
+
+  testWidgets('files: picked, checked, removed, sent', (tester) async {
+    // The whole form on screen.
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    var form = exampleForm()
+      ..attachments.v = (CvContaktlyFormAttachments()
+        ..maxFiles.v = 2
+        ..shownFiles.v = 3);
+    var picks = <ContaktlyFormFile?>[];
+    List<String>? pickedTypes;
+    Future<void> pump({ContaktlyFormFilePicker? filePicker}) => pumpApp(
+      tester,
+      ContaktlyContactForm(
+        form: form,
+        sender: sender,
+        spamCheck: false,
+        filePicker: filePicker,
+      ),
+    );
+    // Without a picker: no files.
+    await pump();
+    expect(find.text('Files'), findsNothing);
+    await pump(
+      filePicker: (types) async {
+        pickedTypes = types;
+        return picks.removeAt(0);
+      },
+    );
+    expect(find.text('Files'), findsOneWidget);
+    expect(
+      find.text(
+        'JPG, PNG, WEBP, GIF, PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, '
+        '5 MB at most per file',
+      ),
+      findsOneWidget,
+    );
+    // One to add, one shown disabled.
+    expect(find.text('Add a file'), findsNWidgets(2));
+    var zip = ContaktlyFormFile(
+      name: 'a.zip',
+      bytes: Uint8List.fromList([0x50, 0x4b, 0x03, 0x04]),
+    );
+    var pdf = ContaktlyFormFile(
+      name: 'cv.pdf',
+      bytes: Uint8List.fromList('%PDF-1.7 a cv'.codeUnits),
+    );
+    picks.addAll([null, zip, pdf]);
+    // Cancelled.
+    await tester.tap(find.byKey(contaktlyContactFormFileAddKey));
+    await tester.pumpAndSettle();
+    expect(pickedTypes, contaktlyFormFileTypes.keys.toList());
+    expect(find.textContaining('a.zip'), findsNothing);
+    await tester.tap(find.byKey(contaktlyContactFormFileAddKey));
+    await tester.pumpAndSettle();
+    expect(find.text('a.zip (4 B)'), findsOneWidget);
+    await fillValid(tester);
+    await submit(tester);
+    expect(sent, isEmpty);
+    expect(find.text('a.zip: this type of file is not taken'), findsOneWidget);
+    await tester.tap(find.byKey(contaktlyContactFormFileRemoveKey(0)));
+    await tester.pumpAndSettle();
+    expect(find.text('a.zip: this type of file is not taken'), findsNothing);
+    await tester.tap(find.byKey(contaktlyContactFormFileAddKey));
+    await tester.pumpAndSettle();
+    expect(find.text('cv.pdf (13 B)'), findsOneWidget);
+    await submit(tester);
+    expect(sent.single.files, [pdf]);
+    // Another message: no files.
+    await tester.tap(find.byKey(contaktlyContactFormAnotherKey));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('cv.pdf'), findsNothing);
   });
 }

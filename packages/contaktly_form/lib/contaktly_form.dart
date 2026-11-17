@@ -29,6 +29,18 @@ export 'src/form_embed.dart'
         contaktlyFormMessageSent,
         contaktlyFormPageUrl,
         contaktlyFormPublishedLoad;
+export 'src/form_files.dart'
+    show
+        ContaktlyFormFile,
+        CvContaktlyFormAttachments,
+        CvContaktlyFormSendFile,
+        contaktlyFormFileAccept,
+        contaktlyFormFileExtensions,
+        contaktlyFormFileMaxSize,
+        contaktlyFormFileTypeOf,
+        contaktlyFormFileTypes,
+        contaktlyFormFilesKey,
+        contaktlyFormFilesMaxSize;
 export 'src/form_message.dart'
     show
         ContaktlyFormValues,

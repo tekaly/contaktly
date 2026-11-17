@@ -1,3 +1,4 @@
+import 'form_files.dart';
 import 'form_message.dart';
 import 'form_model.dart';
 import 'form_sender.dart';
@@ -24,8 +25,9 @@ enum ContaktlyFormStatus {
 /// fields of your own): the values typed, their validation, the robot
 /// check, the send through [sender], then the sent panel or the failure.
 ///
-/// The listeners are called after each change of [status], [errors] or
-/// [failure]; [setValue] calls none (the fields show what is typed).
+/// The listeners are called after each change of [status], [errors],
+/// [failure] or [files]; [setValue] calls none (the fields show what is
+/// typed).
 class ContaktlyFormController {
   /// The form: its fields, their configuration, its texts.
   final ContaktlyFormMixin form;
@@ -48,6 +50,7 @@ class ContaktlyFormController {
 
   final DateTime Function() _now;
   final _values = <String, String>{};
+  var _files = const <ContaktlyFormFile>[];
   final _listeners = <void Function()>[];
   late DateTime _shownAt;
   var _status = ContaktlyFormStatus.editing;
@@ -90,6 +93,24 @@ class ContaktlyFormController {
     _values[key] = value;
   }
 
+  /// The files picked, in their order.
+  List<ContaktlyFormFile> get files => _files;
+
+  /// Sets the files picked, their error cleared, listeners called.
+  void setFiles(List<ContaktlyFormFile> files) {
+    _files = List.unmodifiable(files);
+    if (_errors.containsKey(contaktlyFormFilesKey)) {
+      _errors = {..._errors}..remove(contaktlyFormFilesKey);
+    }
+    _notify();
+  }
+
+  /// Adds [file] to the files picked ([setFiles]).
+  void addFile(ContaktlyFormFile file) => setFiles([..._files, file]);
+
+  /// Removes the file picked at [index] ([setFiles]).
+  void removeFile(int index) => setFiles([..._files]..removeAt(index));
+
   /// The hidden field a person never fills (robots do).
   var honeypot = '';
 
@@ -104,6 +125,7 @@ class ContaktlyFormController {
     message: _values[contaktlyFormFieldMessage],
     honeypot: honeypot,
     shownAt: _shownAt,
+    files: _files,
   );
 
   /// Where the form is.
@@ -117,6 +139,13 @@ class ContaktlyFormController {
 
   /// The error of the field [key], null when none.
   String? errorOf(String key) => _errors[key];
+
+  /// Sets the error of the field [key] (a check of the UI: a file too big
+  /// to read), listeners called.
+  void setError(String key, String error) {
+    _errors = {..._errors, key: error};
+    _notify();
+  }
 
   /// Clears the error of the field [key] (the visitor types again),
   /// listeners called when it had one.
@@ -191,11 +220,12 @@ class ContaktlyFormController {
   }
 
   /// Back to the form for another message: the name and the email kept,
-  /// the subject and the message emptied.
+  /// the subject, the message and the files emptied.
   void another() {
     _values
       ..remove(contaktlyFormFieldSubject)
       ..remove(contaktlyFormFieldMessage);
+    _files = const [];
     _shownAt = _now();
     _errors = const {};
     _failure = '';

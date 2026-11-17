@@ -15,6 +15,7 @@ import 'package:tekartik_mail_tk/mail_tk_contaklty.dart'
         commandContaktlySendEmail;
 
 import 'contaktly_constants.dart';
+import 'form_files.dart';
 import 'form_message.dart';
 import 'form_model.dart';
 import 'form_sender.dart';
@@ -23,13 +24,21 @@ import 'form_sender.dart';
 const _commandGetTimestamp = 'timestamp';
 
 /// The send query of a form: the contaktly one, plus the form id (signed
-/// when set, see [contaktlySignedPaths]).
+/// when set, see [contaktlySignedPaths]) and the files (not signed).
 class ContaktlyFormSendQuery extends ApiSendMailQueryContaktly {
+  /// A query, the models of its files registered.
+  ContaktlyFormSendQuery() {
+    initContaktlyFormBuilders();
+  }
+
   /// The form the message comes from.
   final formId = CvField<String>(contaktlyFormIdPath);
 
+  /// The files of the message, for a form taking files.
+  final files = CvModelListField<CvContaktlyFormSendFile>('files');
+
   @override
-  CvFields get fields => [...super.fields, formId];
+  CvFields get fields => [...super.fields, formId, files];
 }
 
 /// Sends the messages of a published form to the contaktly Dart backend,
@@ -91,6 +100,16 @@ class ContaktlyServiceSender implements ContaktlyFormSender {
     var formId = published.formId.v;
     if (formId != null) {
       query.formId.v = formId;
+    }
+    if (values.files.isNotEmpty) {
+      query.files.v = [
+        for (var file in values.files)
+          CvContaktlyFormSendFile()
+            ..name.v = file.name
+            ..type.v =
+                contaktlyFormFileTypeOf(file.name, file.bytes) ?? file.type
+            ..data.v = base64Encode(file.bytes),
+      ];
     }
     var hashed = signedPaths(
       query,

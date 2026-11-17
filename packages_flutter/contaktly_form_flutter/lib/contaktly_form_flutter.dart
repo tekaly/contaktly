@@ -9,6 +9,7 @@ library;
 export 'package:contaktly_form/contaktly_form.dart'
     show
         ContaktlyFormController,
+        ContaktlyFormFile,
         ContaktlyFormMixin,
         ContaktlyFormSendResult,
         ContaktlyFormSender,
@@ -19,16 +20,22 @@ export 'package:contaktly_form/contaktly_form.dart'
         ContaktlyServiceSender,
         ContaktlySimulatedSender,
         CvContaktlyForm,
+        CvContaktlyFormAttachments,
         CvContaktlyFormProfile,
         CvContaktlyFormPublished,
+        contaktlyFormFileExtensions,
+        contaktlyFormFileTypes,
         contaktlyFormPublishedLoad;
 
 export 'src/contaktly_contact_form.dart'
     show
         ContaktlyContactForm,
         ContaktlyContactFormProfile,
+        ContaktlyFormFilePicker,
         contaktlyContactFormAnotherKey,
         contaktlyContactFormFieldKey,
+        contaktlyContactFormFileAddKey,
+        contaktlyContactFormFileRemoveKey,
         contaktlyContactFormProfileKey,
         contaktlyContactFormSubmitKey;
 export 'src/contaktly_published_form.dart' show ContaktlyPublishedForm;

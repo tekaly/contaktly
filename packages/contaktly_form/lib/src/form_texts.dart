@@ -1,3 +1,4 @@
+import 'form_files.dart';
 import 'form_model.dart';
 
 /// The texts of a form in one language, every one set: the form's own over
@@ -67,7 +68,35 @@ class ContaktlyFormStrings {
   /// The privacy page of the consent line, empty for none.
   final String privacyUrl;
 
-  /// All the texts.
+  /// The label of the files.
+  final String filesLabel;
+
+  /// The line under the files, `{types}` and `{size}` to replace
+  /// ([filesHelpFor]).
+  final String filesHelp;
+
+  /// The button picking a file (Flutter).
+  final String fileAdd;
+
+  /// The button removing a file picked (Flutter).
+  final String fileRemove;
+
+  /// The line under the file fields shown disabled, empty for none.
+  final String filesLocked;
+
+  /// A file of a type not taken, `{name}` to replace.
+  final String fileTypeError;
+
+  /// A file too big, `{name}` and `{size}` to replace.
+  final String fileTooBigError;
+
+  /// Files too big in all, `{size}` to replace.
+  final String filesTooBigError;
+
+  /// The backend refused a file, or too many files.
+  final String fileError;
+
+  /// All the texts (the ones of the files in English by default).
   const ContaktlyFormStrings({
     required this.lang,
     required this.title,
@@ -90,6 +119,15 @@ class ContaktlyFormStrings {
     required this.tooLongError,
     required this.consent,
     required this.privacyUrl,
+    this.filesLabel = 'Files',
+    this.filesHelp = '{types}, {size} at most per file',
+    this.fileAdd = 'Add a file',
+    this.fileRemove = 'Remove',
+    this.filesLocked = '',
+    this.fileTypeError = '{name}: this type of file is not taken',
+    this.fileTooBigError = '{name}: {size} at most',
+    this.filesTooBigError = '{size} at most in all',
+    this.fileError = 'A file was refused: check its type and its size.',
   });
 
   /// These texts, the ones given replaced: the texts of a published form
@@ -115,6 +153,15 @@ class ContaktlyFormStrings {
     String? tooLongError,
     String? consent,
     String? privacyUrl,
+    String? filesLabel,
+    String? filesHelp,
+    String? fileAdd,
+    String? fileRemove,
+    String? filesLocked,
+    String? fileTypeError,
+    String? fileTooBigError,
+    String? filesTooBigError,
+    String? fileError,
   }) => ContaktlyFormStrings(
     lang: lang,
     title: title ?? this.title,
@@ -137,6 +184,15 @@ class ContaktlyFormStrings {
     tooLongError: tooLongError ?? this.tooLongError,
     consent: consent ?? this.consent,
     privacyUrl: privacyUrl ?? this.privacyUrl,
+    filesLabel: filesLabel ?? this.filesLabel,
+    filesHelp: filesHelp ?? this.filesHelp,
+    fileAdd: fileAdd ?? this.fileAdd,
+    fileRemove: fileRemove ?? this.fileRemove,
+    filesLocked: filesLocked ?? this.filesLocked,
+    fileTypeError: fileTypeError ?? this.fileTypeError,
+    fileTooBigError: fileTooBigError ?? this.fileTooBigError,
+    filesTooBigError: filesTooBigError ?? this.filesTooBigError,
+    fileError: fileError ?? this.fileError,
   );
 
   /// The label of the field [key].
@@ -153,6 +209,46 @@ class ContaktlyFormStrings {
   /// [tooLongError] for [max] characters.
   String tooLongErrorFor(int max) =>
       tooLongError.replaceAll('{max}', max.toString());
+
+  /// [bytes] as shown: `5 MB`, `200 KB` (`Mo`, `Ko` in French).
+  String sizeText(int bytes) {
+    var fr = lang == 'fr';
+    if (bytes < 1024) {
+      return '$bytes ${fr ? 'o' : 'B'}';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).round()} ${fr ? 'Ko' : 'KB'}';
+    }
+    var mega = bytes / (1024 * 1024);
+    var text = mega == mega.roundToDouble()
+        ? mega.round().toString()
+        : mega.toStringAsFixed(1);
+    return '${fr ? text.replaceAll('.', ',') : text} ${fr ? 'Mo' : 'MB'}';
+  }
+
+  /// [filesHelp] for [types] (their extensions, `JPG, PDF`) and
+  /// [maxFileSize].
+  String filesHelpFor(Iterable<String> types, int maxFileSize) => filesHelp
+      .replaceAll(
+        '{types}',
+        [
+          for (var type in types) ?contaktlyFormFileTypes[type],
+        ].join(', ').toUpperCase(),
+      )
+      .replaceAll('{size}', sizeText(maxFileSize));
+
+  /// [fileTypeError] for the file [name].
+  String fileTypeErrorFor(String name) =>
+      fileTypeError.replaceAll('{name}', name);
+
+  /// [fileTooBigError] for the file [name] and [maxFileSize].
+  String fileTooBigErrorFor(String name, int maxFileSize) => fileTooBigError
+      .replaceAll('{name}', name)
+      .replaceAll('{size}', sizeText(maxFileSize));
+
+  /// [filesTooBigError] for [maxSize] in all.
+  String filesTooBigErrorFor(int maxSize) =>
+      filesTooBigError.replaceAll('{size}', sizeText(maxSize));
 }
 
 /// The default texts in English.
@@ -202,6 +298,14 @@ const contaktlyFormStringsFr = ContaktlyFormStrings(
   tooLongError: '{max} caractères au plus',
   consent: '',
   privacyUrl: '',
+  filesLabel: 'Fichiers',
+  filesHelp: '{types}, {size} au plus par fichier',
+  fileAdd: 'Ajouter un fichier',
+  fileRemove: 'Retirer',
+  fileTypeError: "{name} : ce type de fichier n'est pas accepté",
+  fileTooBigError: '{name} : {size} au plus',
+  filesTooBigError: '{size} au plus en tout',
+  fileError: 'Un fichier a été refusé : vérifiez son type et sa taille.',
 );
 
 /// The default texts of [lang], English for a language without defaults.
@@ -242,5 +346,14 @@ ContaktlyFormStrings contaktlyFormStrings(
     tooLongError: base.tooLongError,
     consent: own?.consent.v ?? base.consent,
     privacyUrl: own?.privacyUrl.v ?? base.privacyUrl,
+    filesLabel: pick(own?.filesLabel.v, base.filesLabel),
+    filesHelp: pick(own?.filesHelp.v, base.filesHelp),
+    fileAdd: base.fileAdd,
+    fileRemove: base.fileRemove,
+    filesLocked: base.filesLocked,
+    fileTypeError: base.fileTypeError,
+    fileTooBigError: base.fileTooBigError,
+    filesTooBigError: base.filesTooBigError,
+    fileError: base.fileError,
   );
 }

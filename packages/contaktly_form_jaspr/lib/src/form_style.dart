@@ -78,6 +78,22 @@ ${page ? pageCss : _scopedCss(root)}
   border-color: var(--cf-bad);
 }
 .cf-field select option { color: var(--cf-ink); background: var(--cf-paper); }
+/* The files: one input per file, the ones past the max disabled. */
+.cf-field .cf-file { padding: 8px 10px; font-size: 0.9rem; }
+.cf-file + .cf-file { margin-top: 8px; }
+.cf-file:disabled { opacity: 0.5; cursor: not-allowed; }
+.cf-file::file-selector-button {
+  font: inherit;
+  color: var(--cf-accent);
+  background: transparent;
+  border: 1px solid var(--cf-accent);
+  border-radius: var(--cf-radius);
+  padding: 4px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+.cf-file:disabled::file-selector-button { cursor: not-allowed; }
+.cf-help { color: var(--cf-ink2); font-size: 0.85rem; margin: 6px 0 0; }
 .cf-field-error, .cf-error { color: var(--cf-bad); font-size: 0.9rem; margin: 6px 0 0; }
 .cf-error { margin: 0 0 16px; }
 .cf-consent { color: var(--cf-ink2); font-size: 0.85rem; margin: 0 0 16px; }

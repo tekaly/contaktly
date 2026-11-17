@@ -1,5 +1,7 @@
 import 'package:cv/cv.dart';
 
+import 'form_files.dart';
+
 /// The name field: optional by default.
 const contaktlyFormFieldName = 'name';
 
@@ -47,6 +49,8 @@ void initContaktlyFormBuilders() {
     CvContaktlyFormLook.new,
     CvContaktlyFormProfile.new,
     CvContaktlyFormPublished.new,
+    CvContaktlyFormAttachments.new,
+    CvContaktlyFormSendFile.new,
   ]);
 }
 
@@ -92,6 +96,12 @@ class CvContaktlyFormTexts extends CvModelBase {
   /// The label of the message field.
   final messageLabel = CvField<String>('messageLabel');
 
+  /// The label of the files of a form taking files.
+  final filesLabel = CvField<String>('filesLabel');
+
+  /// The line under the files, `{types}` and `{size}` replaced.
+  final filesHelp = CvField<String>('filesHelp');
+
   /// The send button.
   final submit = CvField<String>('submit');
 
@@ -126,6 +136,8 @@ class CvContaktlyFormTexts extends CvModelBase {
     subjectLabel,
     subjectChoices,
     messageLabel,
+    filesLabel,
+    filesHelp,
     submit,
     sending,
     sentTitle,
@@ -224,6 +236,9 @@ mixin ContaktlyFormMixin implements CvModel {
   /// Who the form writes to (a user form), none by default.
   final profile = CvModelField<CvContaktlyFormProfile>('profile');
 
+  /// The files a message may carry, none when null (the default).
+  final attachments = CvModelField<CvContaktlyFormAttachments>('attachments');
+
   /// The fields of the mixin.
   List<CvField> get contaktlyFormFields => [
     serviceId,
@@ -238,6 +253,7 @@ mixin ContaktlyFormMixin implements CvModel {
     redirectUrl,
     embedOrigins,
     profile,
+    attachments,
   ];
 }
 
@@ -317,6 +333,44 @@ extension ContaktlyFormMixinExt on ContaktlyFormMixin {
       .map(fieldOf)
       .where((field) => field.enabled.v!)
       .toList();
+
+  /// True when a message may carry files.
+  bool get takesFiles => maxFileCount > 0;
+
+  /// The files a message may carry, 0 for none.
+  int get maxFileCount {
+    var attachments = this.attachments.v;
+    if (attachments == null) {
+      return 0;
+    }
+    var max = attachments.maxFiles.v ?? 1;
+    return max < 0 ? 0 : max;
+  }
+
+  /// The file fields shown, at least [maxFileCount]: the ones past it are
+  /// shown disabled.
+  int get shownFileCount {
+    if (!takesFiles) {
+      return 0;
+    }
+    var shown = attachments.v!.shownFiles.v ?? 0;
+    return shown > maxFileCount ? shown : maxFileCount;
+  }
+
+  /// The size of a file at most in bytes.
+  int get maxFileSizeOrDefault {
+    var size = attachments.v?.maxFileSize.v;
+    return (size == null || size <= 0 || size > contaktlyFormFileMaxSize)
+        ? contaktlyFormFileMaxSize
+        : size;
+  }
+
+  /// The types taken, of `contaktlyFormFileTypes`.
+  List<String> get fileTypesOrDefault {
+    var types = attachments.v?.types.v ?? const <String>[];
+    var known = types.where(contaktlyFormFileTypes.containsKey).toList();
+    return known.isEmpty ? contaktlyFormFileTypes.keys.toList() : known;
+  }
 
   /// The stored texts of [language], null if none.
   CvContaktlyFormTexts? storedTextsOf(String language) =>

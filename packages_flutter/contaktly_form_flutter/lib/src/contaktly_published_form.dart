@@ -38,6 +38,10 @@ class ContaktlyPublishedForm extends StatefulWidget {
   /// Shown when the form cannot be loaded, nothing by default.
   final Widget Function(BuildContext context, Object error)? errorBuilder;
 
+  /// Picks the files of a form taking files: without, its files are not
+  /// shown.
+  final ContaktlyFormFilePicker? filePicker;
+
   /// The http client (tests), a new one by default.
   final http.Client? client;
 
@@ -55,6 +59,7 @@ class ContaktlyPublishedForm extends StatefulWidget {
     this.loadingBuilder,
     this.errorBuilder,
     this.client,
+    this.filePicker,
   });
 
   @override
@@ -117,6 +122,7 @@ class _ContaktlyPublishedFormState extends State<ContaktlyPublishedForm> {
           applyLook: widget.applyLook,
           showTitle: widget.showTitle,
           showProfile: widget.showProfile,
+          filePicker: widget.filePicker,
         );
       }
       var error = snapshot.error;

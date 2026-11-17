@@ -11,6 +11,20 @@ const contaktlyContactFormSubmitKey = ValueKey('contaktly_form_submit');
 /// The key of the "write another message" button of the sent panel.
 const contaktlyContactFormAnotherKey = ValueKey('contaktly_form_another');
 
+/// The key of the button adding a file.
+const contaktlyContactFormFileAddKey = ValueKey('contaktly_form_file_add');
+
+/// The key of the button removing the file picked at [index].
+Key contaktlyContactFormFileRemoveKey(int index) =>
+    ValueKey('contaktly_form_file_remove_$index');
+
+/// Picks a file of one of [types] (`image/png`... of
+/// `contaktlyFormFileTypes`, their extensions with
+/// `contaktlyFormFileExtensions`), null when none was picked: a picker of
+/// the app (`file_selector`, `file_picker`...), the package has no plugin.
+typedef ContaktlyFormFilePicker =
+    Future<ContaktlyFormFile?> Function(List<String> types);
+
 /// A contaktly contact form: the shown fields of a form in a language,
 /// their validation, the send button, then the sent panel, or the failure.
 ///
@@ -51,6 +65,10 @@ class ContaktlyContactForm extends StatefulWidget {
   /// true by default.
   final bool showProfile;
 
+  /// Picks the files of a form taking files: without, its files are not
+  /// shown.
+  final ContaktlyFormFilePicker? filePicker;
+
   /// The form [form] in [lang], sending through [sender].
   const ContaktlyContactForm({
     super.key,
@@ -63,6 +81,7 @@ class ContaktlyContactForm extends StatefulWidget {
     this.spamCheck = true,
     this.showTitle = true,
     this.showProfile = true,
+    this.filePicker,
   }) : controller = null;
 
   /// The form of [controller], its state: its form, sender, language and
@@ -74,6 +93,7 @@ class ContaktlyContactForm extends StatefulWidget {
     this.applyLook = true,
     this.showTitle = true,
     this.showProfile = true,
+    this.filePicker,
   }) : form = null,
        sender = null,
        lang = null,
@@ -237,6 +257,10 @@ class _ContaktlyContactFormState extends State<ContaktlyContactForm> {
           _field(field, strings),
           SizedBox(height: gap),
         ],
+        if (_form.form.takesFiles && widget.filePicker != null) ...[
+          _files(context, strings),
+          SizedBox(height: gap),
+        ],
         // A field a person never sees, robots fill it.
         ExcludeFocus(
           child: Offstage(child: TextField(controller: _honeypot)),
@@ -316,6 +340,92 @@ class _ContaktlyContactFormState extends State<ContaktlyContactForm> {
         alignLabelWithHint: isMessage,
       ),
       onChanged: (value) => _changed(key, value),
+    );
+  }
+
+  var _picking = false;
+
+  Future<void> _pickFile() async {
+    if (_picking) {
+      return;
+    }
+    _picking = true;
+    try {
+      var file = await widget.filePicker!(_form.form.fileTypesOrDefault);
+      if (file != null && mounted) {
+        _form.addFile(file);
+      }
+    } finally {
+      _picking = false;
+    }
+  }
+
+  /// The files of a form taking files: the ones picked (each removable),
+  /// the button adding one while there is room, the ones past the max shown
+  /// disabled, the types and the size under them.
+  Widget _files(BuildContext context, ContaktlyFormStrings strings) {
+    var form = _form.form;
+    var theme = Theme.of(context);
+    var text = theme.textTheme;
+    var sending = _form.isSending;
+    var files = _form.files;
+    var maxFiles = form.maxFileCount;
+    var error = _form.errorOf(contaktlyFormFilesKey);
+    var types = form.fileTypesOrDefault;
+    Widget addButton({required bool enabled, Key? key}) => Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: OutlinedButton.icon(
+        key: key,
+        onPressed: enabled && !sending ? _pickFile : null,
+        icon: const Icon(Icons.attach_file),
+        label: Text(strings.fileAdd),
+      ),
+    );
+    var locked = form.shownFileCount - maxFiles;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(strings.filesLabel, style: text.labelLarge),
+        const SizedBox(height: 6),
+        for (var (index, file) in files.indexed)
+          Row(
+            children: [
+              const Icon(Icons.insert_drive_file_outlined, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${file.name} (${strings.sizeText(file.size)})',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                key: contaktlyContactFormFileRemoveKey(index),
+                tooltip: strings.fileRemove,
+                onPressed: sending ? null : () => _form.removeFile(index),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+        if (files.length < maxFiles)
+          addButton(enabled: true, key: contaktlyContactFormFileAddKey),
+        for (var i = 0; i < locked; i++) ...[
+          const SizedBox(height: 6),
+          addButton(enabled: false),
+        ],
+        const SizedBox(height: 6),
+        Text(
+          strings.filesHelpFor(types, form.maxFileSizeOrDefault),
+          style: text.bodySmall,
+        ),
+        if (locked > 0 && strings.filesLocked.isNotEmpty)
+          Text(strings.filesLocked, style: text.bodySmall),
+        if (error != null)
+          Text(
+            error,
+            style: text.bodySmall?.copyWith(color: theme.colorScheme.error),
+          ),
+      ],
     );
   }
 

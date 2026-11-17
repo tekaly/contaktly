@@ -80,16 +80,31 @@ class ContaktlyFormSendException implements Exception {
   /// Over the limits of the form, for now.
   bool get isLimited => code == contaktlyFormErrorCodeLimited;
 
+  /// The files were refused (a type, a size, their count, or the form
+  /// takes none).
+  bool get isFileRefused =>
+      code == 'invalid-argument' && _fileErrors.contains(message);
+
   @override
   String toString() => 'ContaktlyFormSendException($code: $message)';
 }
 
-/// The error text of [error], a failed send: closed, limited, or the
-/// form's own.
+/// The messages of the contaktly backend refusing files.
+const _fileErrors = {
+  'File',
+  'File type',
+  'File too big',
+  'Too many files',
+  'No files',
+};
+
+/// The error text of [error], a failed send: closed, limited, files
+/// refused, or the form's own.
 String contaktlyFormSendErrorText(Object error, ContaktlyFormStrings strings) =>
     switch (error) {
       ContaktlyFormSendException(isClosed: true) => strings.closedError,
       ContaktlyFormSendException(isLimited: true) => strings.limitedError,
+      ContaktlyFormSendException(isFileRefused: true) => strings.fileError,
       _ => strings.error,
     };
 

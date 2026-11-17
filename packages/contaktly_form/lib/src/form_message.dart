@@ -1,6 +1,7 @@
 import 'package:tekartik_mail/utils/mail_utils.dart' show validateEmail;
 import 'package:tekartik_mail_tk/mail_tk.dart';
 
+import 'form_files.dart';
 import 'form_model.dart';
 import 'form_texts.dart';
 
@@ -34,6 +35,9 @@ class ContaktlyFormValues {
   /// When the form showed, for [contaktlyFormIsLikelySpam].
   final DateTime? shownAt;
 
+  /// The files picked, for a form taking files; none by default.
+  final List<ContaktlyFormFile> files;
+
   /// The values of a form.
   const ContaktlyFormValues({
     this.name,
@@ -42,6 +46,7 @@ class ContaktlyFormValues {
     this.message,
     this.honeypot,
     this.shownAt,
+    this.files = const [],
   });
 
   /// The value of the field [key], trimmed, null when empty.
@@ -58,8 +63,9 @@ class ContaktlyFormValues {
 }
 
 /// The errors of [values] in [form], by field key, empty when valid: a
-/// required field left empty, an invalid email, a value too long. A hidden
-/// field is ignored.
+/// required field left empty, an invalid email, a value too long; the files
+/// under [contaktlyFormFilesKey] (the first error): too many, a type not
+/// taken, too big. A hidden field is ignored.
 Map<String, String> contaktlyFormValidate(
   ContaktlyFormMixin form,
   ContaktlyFormValues values,
@@ -89,7 +95,42 @@ Map<String, String> contaktlyFormValidate(
       errors[key] = strings.requiredError;
     }
   }
+  var filesError = _filesError(form, values.files, strings);
+  if (filesError != null) {
+    errors[contaktlyFormFilesKey] = filesError;
+  }
   return errors;
+}
+
+/// The first error of [files] in [form], null when none.
+String? _filesError(
+  ContaktlyFormMixin form,
+  List<ContaktlyFormFile> files,
+  ContaktlyFormStrings strings,
+) {
+  if (files.isEmpty) {
+    return null;
+  }
+  if (files.length > form.maxFileCount) {
+    return strings.fileError;
+  }
+  var types = form.fileTypesOrDefault;
+  var maxFileSize = form.maxFileSizeOrDefault;
+  var total = 0;
+  for (var file in files) {
+    var type = contaktlyFormFileTypeOf(file.name, file.bytes);
+    if (type == null || !types.contains(type)) {
+      return strings.fileTypeErrorFor(file.name);
+    }
+    if (file.size > maxFileSize) {
+      return strings.fileTooBigErrorFor(file.name, maxFileSize);
+    }
+    total += file.size;
+  }
+  if (total > contaktlyFormFilesMaxSize) {
+    return strings.filesTooBigErrorFor(contaktlyFormFilesMaxSize);
+  }
+  return null;
 }
 
 /// True when [values] look sent by a robot: the [ContaktlyFormValues.honeypot]

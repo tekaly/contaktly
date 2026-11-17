@@ -162,6 +162,53 @@ void main() {
     expect(hidden.attributes['value'], '1234');
   });
 
+  testServer('a form taking files: one input per file', (tester) async {
+    var form = exampleForm()
+      ..attachments.v = (CvContaktlyFormAttachments()
+        ..maxFiles.v = 1
+        ..shownFiles.v = 3
+        ..types.v = ['application/pdf', 'image/png']);
+    tester.pumpComponent(
+      ContaktlyContactFormView(form: form, lang: 'en', action: '/send'),
+    );
+    var document = (await tester.request('/')).document!;
+    expect(
+      document.querySelector('form.cf-form')!.attributes['enctype'],
+      'multipart/form-data',
+    );
+    var inputs = document.querySelectorAll('input[type="file"]');
+    expect(inputs.map((input) => input.attributes['name']), [
+      'file1',
+      'file2',
+      'file3',
+    ]);
+    // The ones past the max shown disabled.
+    expect(inputs.map((input) => input.attributes.containsKey('disabled')), [
+      false,
+      true,
+      true,
+    ]);
+    expect(
+      inputs.first.attributes['accept'],
+      'application/pdf,image/png,.pdf,.png',
+    );
+    expect(document.querySelector('label[for="cf-file1"]')?.text, 'Files');
+    expect(
+      document.querySelector('#cf-files-help')?.text,
+      'PDF, PNG, 5 MB at most per file',
+    );
+    // Without files: none, urlencoded.
+    tester.pumpComponent(
+      ContaktlyContactFormView(form: exampleForm(), lang: 'en', action: '/s'),
+    );
+    document = (await tester.request('/')).document!;
+    expect(document.querySelector('input[type="file"]'), isNull);
+    expect(
+      document.querySelector('form.cf-form')!.attributes['enctype'],
+      isNull,
+    );
+  });
+
   test('the look in the css', () {
     var css = contaktlyFormCss(
       accent: '#00897b',

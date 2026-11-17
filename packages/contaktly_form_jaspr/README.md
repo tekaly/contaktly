@@ -32,3 +32,7 @@ variables (`--cf-accent`, `--cf-radius`...) in the site's css to adapt it.
 Another sender (your own backend, a simulation): an island of your own
 rendering `ContaktlyContactFormView(form:, lang:, sender:)`; with `action:`
 the form also posts by itself where no script runs.
+
+A form taking files shows one file input per file (`file1`, `file2`...),
+the ones past its max disabled; the island reads the files chosen when it
+sends. Posted without a script, the form is `multipart/form-data`.
